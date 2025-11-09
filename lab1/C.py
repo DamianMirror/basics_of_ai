@@ -108,7 +108,6 @@ def a_star(start, goal):
     if not is_solvable(start):
         return -1
 
-    # Priority queue: (f_score, g_score, state)
     start_tuple = state_to_tuple(start)
     goal_tuple = state_to_tuple(goal)
 
@@ -116,7 +115,8 @@ def a_star(start, goal):
         return 0
 
     h_start = manhattan_distance(start, goal)
-    pq = [(h_start, 0, start)]  # (f, g, state)
+    # Priority queue: (f_score, g_score, state)
+    pq = [(h_start, 0, start)]
 
     visited = set()
     g_scores = {start_tuple: 0}

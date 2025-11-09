@@ -25,100 +25,114 @@ Constraints
 n * m ≤ 20
 '''
 
-
-import sys
 from collections import deque
 
-def solve():
-    n, m = map(int, sys.stdin.readline().split())
-    grid = [sys.stdin.readline().strip() for _ in range(n)]
+def bfs_distance(grid, start, n, m):
+    """Знаходить найкоротші відстані від start до всіх клітинок"""
+    dist = [[float('inf')] * m for _ in range(n)]
+    dist[start[0]][start[1]] = 0
 
-    # Find dirty cells
+    queue = deque([start])
+
+    while queue:
+        x, y = queue.popleft()
+
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            nx, ny = x + dx, y + dy
+
+            if 0 <= nx < n and 0 <= ny < m and dist[nx][ny] == float('inf'):
+                dist[nx][ny] = dist[x][y] + 1
+                queue.append((nx, ny))
+
+    return dist
+
+def solve():
+    n, m = map(int, input().split())
+    grid = []
+    for _ in range(n):
+        grid.append(input().strip())
+
+    # Знаходимо всі брудні клітинки
     dirty = []
     for i in range(n):
-        row = grid[i]
         for j in range(m):
-            if row[j] == '*':
+            if grid[i][j] == '*':
                 dirty.append((i, j))
 
-    k = len(dirty)
+    # Якщо немає брудних клітинок
+    if not dirty:
+        print(0)
+        return
 
-    if k == 0:
-        return 0
+    # Створюємо стартову позицію (0, 0)
+    start = (0, 0)
 
-    INF = 999999
+    # Обчислюємо відстані від стартової позиції та між усіма брудними клітинками
+    # D[i][j] = відстань від i-ї позиції до j-ї брудної клітинки
+    # D[0][j] = відстань від старту до j-ї брудної клітинки
+    positions = [start] + dirty
+    D = [[float('inf')] * (len(dirty) + 1) for _ in range(len(dirty) + 1)]
 
-    def bfs(si, sj):
-        d = [[INF]*m for _ in range(n)]
-        d[si][sj] = 0
-        q = deque([(si, sj)])
-        while q:
-            i, j = q.popleft()
-            cd = d[i][j]
-            # Unroll loop for PyPy
-            ni, nj = i, j+1
-            if nj < m and d[ni][nj] == INF:
-                d[ni][nj] = cd + 1
-                q.append((ni, nj))
-            ni, nj = i+1, j
-            if ni < n and d[ni][nj] == INF:
-                d[ni][nj] = cd + 1
-                q.append((ni, nj))
-            ni, nj = i, j-1
-            if nj >= 0 and d[ni][nj] == INF:
-                d[ni][nj] = cd + 1
-                q.append((ni, nj))
-            ni, nj = i-1, j
-            if ni >= 0 and d[ni][nj] == INF:
-                d[ni][nj] = cd + 1
-                q.append((ni, nj))
-        return d
+    for i, pos in enumerate(positions):
+        dist_map = bfs_distance(grid, pos, n, m)
+        for j, dirty_pos in enumerate(dirty):
+            D[i][j + 1] = dist_map[dirty_pos[0]][dirty_pos[1]]
 
-    # Build distance matrix
-    dist = [[0]*k for _ in range(k)]
-    from_start = [0]*k
+    # DP з бітовими масками
+    # dp[mask][i] = мінімальна відстань для відвідування підмножини mask брудних клітинок,
+    # закінчуючи в i-й брудній клітинці
+    BITMASK = 1 << len(dirty)
+    dp = [[float('inf')] * (len(dirty) + 1) for _ in range(BITMASK)]
 
-    # From start
-    sd = bfs(0, 0)
-    for i in range(k):
-        di, dj = dirty[i]
-        from_start[i] = sd[di][dj]
+    # Ініціалізація: йдемо зі старту до кожної брудної клітинки
+    for j in range(1, len(dirty) + 1):
+        mask = 1 << (j - 1)
+        dp[mask][j] = D[0][j]
 
-    # Between dirty cells
-    for i in range(k):
-        di, dj = dirty[i]
-        dd = bfs(di, dj)
-        for j in range(k):
-            if i != j:
-                dj_i, dj_j = dirty[j]
-                dist[i][j] = dd[dj_i][dj_j]
+    # Заповнюємо DP
+    for mask in range(BITMASK):
+        # Перевірка: чи є хоч один валідний стан в цій масці
+        has_valid = False
+        for i in range(1, len(dirty) + 1):
+            if dp[mask][i] < float('inf'):
+                has_valid = True
+                break
 
-    # DP with bitmask
-    full = (1<<k)-1
-    dp = [[INF]*k for _ in range(1<<k)]
+        if not has_valid:
+            continue
 
-    for i in range(k):
-        dp[1<<i][i] = from_start[i] + 1
-
-    for mask in range(1, 1<<k):
-        dp_mask = dp[mask]
-        for i in range(k):
-            bit_i = 1<<i
+        for i in range(1, len(dirty) + 1):
+            # Перевірка: чи i-й біт встановлений в масці
+            bit_i = 1 << (i - 1)
             if not (mask & bit_i):
                 continue
-            cur = dp_mask[i]
-            if cur >= INF:
+
+            curr_d = dp[mask][i]
+
+            if curr_d >= float('inf'):
                 continue
-            dist_i = dist[i]
-            for j in range(k):
-                bit_j = 1<<j
-                if mask & bit_j:
+
+            for j in range(1, len(dirty) + 1):
+                bit = 1 << (j - 1)
+
+                if mask & bit:
                     continue
-                nmask = mask | bit_j
-                nval = cur + dist_i[j] + 1
-                if nval < dp[nmask][j]:
-                    dp[nmask][j] = nval
 
-    return min(dp[full])
+                nm = mask | bit
+                nd = D[i][j] + curr_d
 
-print(solve())
+                if nd < dp[nm][j]:
+                    dp[nm][j] = nd
+
+    # Знаходимо мінімальну відстань для відвідування всіх брудних клітинок
+    full_mask = (1 << len(dirty)) - 1
+    result = min(dp[full_mask][1:])
+
+    # Додаємо час на очищення кожної клітинки (по 1 секунді на кожну)
+    print(result + len(dirty))
+
+if __name__ == "__main__":
+    solve()
+
+
+

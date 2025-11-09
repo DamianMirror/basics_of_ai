@@ -38,6 +38,8 @@ def main():
         for p1, p2 in combinations(points, 2):
             edge_to_triangles[frozenset([p1, p2])].append(i)
 
+    print(edge_to_triangles.values())
+
     # graph of connected triangles
     triangle_graph = defaultdict(set)
     for triangles in edge_to_triangles.values():
