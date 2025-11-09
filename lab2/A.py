@@ -23,6 +23,7 @@ One email contains no more than 100,000 characters.
 
 from collections import defaultdict
 
+
 def main():
     N, M, K = map(int, input().split())
 
@@ -30,50 +31,58 @@ def main():
     spam_emails = [input().strip() for _ in range(M)]
     new_emails = [input().strip() for _ in range(K)]
 
-    spam_probability = M / (N + M)
-    normal_probability = N / (N + M)
+    # Handle edge cases
+    if M == 0:
+        for _ in range(K):
+            print(0.0)
+        return
+    if N == 0:
+        for _ in range(K):
+            print(1.0)
+        return
 
-    word_counts_normal = defaultdict(int)
-    word_counts_spam = defaultdict(int)
+    # Prior probabilities
+    prior_spam = M / (N + M)
+    prior_normal = N / (N + M)
+
+    word_count_normal = defaultdict(int)
+    word_count_spam = defaultdict(int)
 
     for email in normal_emails:
-        words = set(email.split())  # unique words only
+        words = email.split()
         for word in words:
-            word_counts_normal[word] += 1
+            word_count_normal[word] += 1
 
     for email in spam_emails:
-        words = set(email.split())  # unique words only
+        words = email.split()
         for word in words:
-            word_counts_spam[word] += 1
+            word_count_spam[word] += 1
 
+    # Total word counts
+    total_spam_words = sum(word_count_spam.values())
+    total_normal_words = sum(word_count_normal.values())
 
+    # Process each new email
     for email in new_emails:
         words = email.split()
-        prob_spam = spam_probability
-        prob_normal = normal_probability
+
+        prob_spam = prior_spam
+        prob_normal = prior_normal
 
         for word in words:
-            prob_word_given_spam = word_counts_spam[word] / M
-            prob_word_given_normal = word_counts_normal[word] / N
+            # Probability based on word frequency
+            prob_spam *= word_count_spam[word] / total_spam_words
+            prob_normal *= word_count_normal[word] / total_normal_words
 
-            if prob_word_given_spam == 0:
-                prob_word_given_spam = 1 / (M * 10**6)
-            if prob_word_given_normal == 0:
-                prob_word_given_normal = 1 / (N * 10**6)
+        # Normalization
+        total = prob_spam + prob_normal
 
-            prob_spam *= prob_word_given_spam
-            prob_normal *= prob_word_given_normal
-
-        #normalization
-        prob_normal = prob_normal / prob_spam + prob_normal
-        prob_spam = prob_spam / prob_spam + prob_normal
-
-        total_prob = prob_spam + prob_normal
-        if total_prob == 0:
-            print(0.0)
+        if total == 0:
+            result = 0.0
         else:
-            print(prob_spam / total_prob)
+            result = prob_spam / total
 
+        print(result)
 
 
 if __name__ == "__main__":
