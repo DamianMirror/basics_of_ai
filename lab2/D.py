@@ -27,6 +27,70 @@ match the points belonging to the corresponding cluster in the reference solutio
 Cluster numbers may differ, the main thing is that the distribution of points across clusters is identical.
 '''
 
+import math
+
+
+def euclidean_distance(p1, p2):
+    """Calculate Euclidean distance between two points"""
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+def kmeans(points, initial_centers_idx, k, iterations=100):
+    """
+    K-means clustering algorithm
+
+    Args:
+        points: list of (x, y) tuples
+        initial_centers_idx: list of indices for initial cluster centers (1-indexed)
+        k: number of clusters
+        iterations: number of iterations to run
+
+    Returns:
+        list of cluster assignments for each point (0-indexed cluster numbers)
+    """
+    n = len(points)
+
+    # Initialize cluster centers using given indices (convert from 1-indexed to 0-indexed)
+    centers = [points[idx - 1] for idx in initial_centers_idx]
+
+    # Initialize cluster assignments
+    clusters = [0] * n
+
+    # Run for specified number of iterations
+    for iteration in range(iterations):
+        # Step 1: Assign each point to nearest cluster center
+        for i in range(n):
+            min_dist = float('inf')
+            closest_cluster = 0
+
+            for j in range(k):
+                dist = euclidean_distance(points[i], centers[j])
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_cluster = j
+
+            clusters[i] = closest_cluster
+
+        # Step 2: Update cluster centers
+        new_centers = []
+
+        for j in range(k):
+            # Find all points belonging to cluster j
+            cluster_points = [points[i] for i in range(n) if clusters[i] == j]
+
+            if len(cluster_points) == 0:
+                # If no points in cluster, move center to (0, 0)
+                new_centers.append((0, 0))
+            else:
+                # Calculate mean of all points in cluster
+                mean_x = sum(p[0] for p in cluster_points) / len(cluster_points)
+                mean_y = sum(p[1] for p in cluster_points) / len(cluster_points)
+                new_centers.append((mean_x, mean_y))
+
+        centers = new_centers
+
+    return clusters
+
 def main():
     N, K = map(int, input().split())
 
@@ -34,6 +98,12 @@ def main():
 
     initial_indices = list(map(int, input().split()))
 
+    # Run K-means
+    clusters = kmeans(points, initial_indices, K, iterations=100)
+
+    # Output cluster assignments (convert to 1-indexed)
+    for cluster in clusters:
+        print(cluster + 1)
 
 
 if __name__ == "__main__":
