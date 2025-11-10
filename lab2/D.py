@@ -30,9 +30,9 @@ Cluster numbers may differ, the main thing is that the distribution of points ac
 import math
 
 
-def euclidean_distance(p1, p2):
+def euclidean_distance_squared(p1, p2):
     """Calculate Euclidean distance between two points"""
-    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+    return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
 
 
 def kmeans(points, initial_centers_idx, k, iterations=100):
@@ -59,17 +59,25 @@ def kmeans(points, initial_centers_idx, k, iterations=100):
     # Run for specified number of iterations
     for iteration in range(iterations):
         # Step 1: Assign each point to nearest cluster center
+        changed = False  # Track if any assignments changed
+
         for i in range(n):
-            min_dist = float('inf')
-            closest_cluster = 0
+            min_dist_sq = float('inf')
+            closest_cluster = clusters[i]  # Start with current assignment
 
             for j in range(k):
-                dist = euclidean_distance(points[i], centers[j])
-                if dist < min_dist:
-                    min_dist = dist
+                dist_sq = euclidean_distance_squared(points[i], centers[j])
+                if dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
                     closest_cluster = j
 
-            clusters[i] = closest_cluster
+            if clusters[i] != closest_cluster:
+                clusters[i] = closest_cluster
+                changed = True
+
+        # Early stopping: if no assignments changed, we've converged
+        if not changed:
+            break
 
         # Step 2: Update cluster centers
         new_centers = []
