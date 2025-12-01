@@ -49,7 +49,6 @@ def knn(known_houses, target_features, K):
         dist_sq = euclidean_distance_squared(features, target_features)
         distances.append((dist_sq, idx, price))
 
-    # Use heap only if K is very small compared to N
     if K < len(known_houses) // 10:  # K < N/10
         k_nearest = heapq.nsmallest(K, distances, key=lambda x: (x[0], x[1]))
         total_price = sum(price for _, _, price in k_nearest)
