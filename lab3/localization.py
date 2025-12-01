@@ -120,8 +120,8 @@ def main():
             denom = dx * sdy - dy * sdx
 
             if denom != 0:
-                t = (v1x * sdy - v1y * sdx) / denom
-                u = (v1x * dy - v1y * dx) / denom
+                t = (v1x * sdy - v1y * sdx) / denom # Ray Distance
+                u = (v1x * dy - v1y * dx) / denom # Wall Fraction
                 if t > 0 and 0 <= u <= 1:
                     if t < min_dist: min_dist = t
         return min_dist
@@ -148,7 +148,7 @@ def main():
             if is_inside(rx, ry):
                 particles.append([rx, ry])
 
-    # Optimization: Check only every 30th ray to save time
+    # Optimization: Check only every 10th ray to save time
     check_indices = list(range(0, K, max(1, K // 10)))
 
     # --- Main Loop ---
